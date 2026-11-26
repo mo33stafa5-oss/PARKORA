@@ -564,8 +564,12 @@ function powerLines(pos) {
 /* ---------- graph canvas ---------- */
 function Graph({ view, pos, setPos, sel, onSelect, showPower, hl, extra }) {
   const stage = useRef(null);
-  const [t, setT] = useState({ x: 0, y: 0, k: .6 });
-  const tRef = useRef(t); tRef.current = t;
+  // pan/zoom lives outside React state: written straight to the DOM once per frame (no re-render while dragging)
+  const tRef = useRef({ x: 0, y: 0, k: .6 });
+  const worldRef = useRef(null), rafT = useRef(0), rafP = useRef(0), pendingPos = useRef(null);
+  const paintT = () => { rafT.current = 0; const c = tRef.current; if (worldRef.current) worldRef.current.style.transform = 'translate3d(' + c.x + 'px,' + c.y + 'px,0) scale(' + c.k + ')'; };
+  const setT = v => { tRef.current = typeof v === 'function' ? v(tRef.current) : v; if (!rafT.current) rafT.current = requestAnimationFrame(paintT); };
+  useEffect(() => () => { cancelAnimationFrame(rafT.current); cancelAnimationFrame(rafP.current); }, []);
   const drag = useRef(null);
   const posRef = useRef(pos); posRef.current = pos;
 
@@ -604,7 +608,7 @@ function Graph({ view, pos, setPos, sel, onSelect, showPower, hl, extra }) {
       const dx = ev.clientX - d.px, dy = ev.clientY - d.py;
       if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true;
       if (!d.moved) return;
-      if (d.id) { const k = tRef.current.k; setPos(p => ({ ...p, [d.id]: { x: d.orig.x + dx / k, y: d.orig.y + dy / k } })); }
+      if (d.id) { const k = tRef.current.k; pendingPos.current = { id: d.id, x: d.orig.x + dx / k, y: d.orig.y + dy / k }; if (!rafP.current) rafP.current = requestAnimationFrame(() => { rafP.current = 0; const q = pendingPos.current; setPos(p => ({ ...p, [q.id]: { x: q.x, y: q.y } })); }); }
       else setT(c => ({ ...c, x: d.orig.x + dx, y: d.orig.y + dy }));
     };
     const up = () => {
@@ -693,7 +697,7 @@ function Graph({ view, pos, setPos, sel, onSelect, showPower, hl, extra }) {
     : [['var(--mute)', 'Flow'], ['var(--acc)', 'Active path']];
 
   return h('div', { className: 'stage', ref: stage, onPointerDown: e => onDown(e, null) },
-    h('div', { className: 'world', style: { transform: 'translate(' + t.x + 'px,' + t.y + 'px) scale(' + t.k + ')' } },
+    h('div', { className: 'world', ref: el => { worldRef.current = el; if (el && !el.style.transform) paintT(); } },
       h('svg', { className: 'edges' },
         h('defs', null,
           h('marker', { id: 'arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, h('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--mute)' })),
