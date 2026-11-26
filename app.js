@@ -11,7 +11,7 @@ const ESP_W = 290, ESP_HEAD = 52, ROW = 22, CW = 228, C_HEAD = 50, PROW = 24, FW
 const ESP_X = 0, ESP_Y = 120;
 
 /* ---------- ESP32 DevKitC 38-pin, physical order top to bottom ---------- */
-const LEFT = [['3V3','3V3','pwr'],['EN','EN','avoid'],['VP','36'],['VN','39'],['34','34'],['35','35'],['32','32'],['33','33'],['25','25'],['26','26'],['27','27'],['14','14'],['12','12','spare'],['GND','GND','gnd'],['13','13'],['SD2','9','avoid'],['SD3','10','avoid'],['CMD','11','avoid'],['5V','5V','pwr']];
+const LEFT = [['3V3','3V3','pwr'],['EN','EN','avoid'],['VP','36'],['VN','39'],['34','34'],['35','35'],['32','32'],['33','33'],['25','25'],['26','26'],['27','27'],['14','14'],['12','12'],['GND','GND','gnd'],['13','13'],['SD2','9','avoid'],['SD3','10','avoid'],['CMD','11','avoid'],['5V','5V','pwr']];
 const RIGHT = [['GND','GND','gnd'],['23','23'],['22','22'],['TX0','1','avoid'],['RX0','3','avoid'],['21','21'],['GND','GND','gnd'],['19','19'],['18','18'],['5','5'],['17','17'],['16','16'],['4','4'],['0','0'],['2','2'],['15','15'],['SD1','8','avoid'],['SD0','7','avoid'],['CLK','6','avoid']];
 const pinStatus = p => p[2] || 'used';
 function espPort(gpio, pos) {
@@ -26,17 +26,17 @@ function espPort(gpio, pos) {
 const COMPS = [
   { id:'slotir', t:'Slot IR sensors ×4', s:'FC-51 · P1–P4 · 3.3 V', side:'L', x:-470, y:0, c:'#e04f5f', v:'3v3', ports:[['P1 OUT','36'],['P2 OUT','39'],['P3 OUT','32'],['P4 OUT','33']] },
   { id:'mq2', t:'MQ-2 gas sensor', s:'5 V heater · AO via divider', side:'L', x:-470, y:176, c:'#7aa52a', v:'5v', ports:[['AO ÷ 1k/2k','34']] },
-  { id:'us', t:'HC-SR04 ultrasonic', s:'Entry gate · car detect · 5 V', side:'L', x:-470, y:280, c:'#13a8a8', v:'5v', ports:[['ECHO ÷ 1k/2k','35'],['TRIG','23']] },
+  { id:'us', t:'HC-SR04 ultrasonic — entry', s:'Entry gate · car detect · 5 V', side:'L', x:-470, y:280, c:'#13a8a8', v:'5v', ports:[['ECHO ÷ 1k/2k','35'],['TRIG','23']] },
   { id:'buzzer', t:'Buzzer', s:'Active buzzer module · 3.3 V', side:'L', x:-470, y:408, c:'#8a96a3', v:'3v3', ports:[['I/O','25']] },
   { id:'pir', t:'PIR motion (HC-SR501)', s:'5 V supply · 3.3 V output', side:'L', x:-470, y:512, c:'#e05aa8', v:'5v', ports:[['OUT','26']] },
-  { id:'irexit', t:'Exit IR sensor', s:'FC-51 at exit gate · 3.3 V', side:'L', x:-470, y:616, c:'#ff7a59', v:'3v3', ports:[['OUT','27']] },
-  { id:'servoexit', t:'Servo SG90 — exit', s:'Exit barrier · 5 V supply', side:'L', x:-470, y:720, c:'#b9770e', v:'5v', ports:[['Signal','14']] },
-  { id:'servoentry', t:'Servo SG90 — entry', s:'Entry barrier · 5 V supply', side:'L', x:-470, y:824, c:'#f2994a', v:'5v', ports:[['Signal','13']] },
+  { id:'usexit', t:'HC-SR04 ultrasonic — exit', s:'Exit gate · car detect · 5 V', side:'L', x:-470, y:616, c:'#0e7c86', v:'5v', ports:[['ECHO ÷ 1k/2k','27'],['TRIG','12']] },
+  { id:'servoexit', t:'Servo SG90 — exit', s:'Exit barrier · 5 V supply', side:'L', x:-470, y:744, c:'#b9770e', v:'5v', ports:[['Signal','14']] },
+  { id:'servoentry', t:'Servo SG90 — entry', s:'Entry barrier · 5 V supply', side:'L', x:-470, y:848, c:'#f2994a', v:'5v', ports:[['Signal','13']] },
   { id:'lcd', t:'LCD 16×2 + I2C backpack', s:'Address 0x27 or 0x3F · 5 V', side:'R', x:500, y:100, c:'#2f80ed', v:'5v', ports:[['SCL','22'],['SDA','21']] },
   { id:'keypad', t:'Keypad 4×4', s:'Passive matrix · no power pin', side:'R', x:500, y:250, c:'#9b51e0', v:null, ports:[['C1','19'],['C2','18'],['C3','5'],['R1','17'],['R2','16'],['R3','4'],['R4','0'],['C4','2']] },
   { id:'light', t:'Garage light LED', s:'220 Ω series resistor', side:'R', x:500, y:540, c:'#d9a400', v:'gnd', ports:[['Anode (+)','15']] }
 ];
-const PSU = { id:'psu', x:10, y:960, w:270, h:64 };
+const PSU = { id:'psu', x:10, y:990, w:270, h:64 };
 const compH = c => C_HEAD + c.ports.length * PROW + 10;
 
 /* ---------- logic graph ---------- */
@@ -64,9 +64,9 @@ const LOGIC = {
     { id:'passed', k:'dec', x:0, y:1070, t:'Car passed?', s:'Ultrasonic clear for 2 s' },
     { id:'closeEntry', k:'act', x:0, y:1200, t:'Close entry gate', s:'Servo 1 → 0°' },
     { id:'slotUpd', k:'act', x:0, y:1330, t:'Slot sensor changes', s:'Debounce 300 ms → sync to cloud' },
-    { id:'exitDet', k:'dec', x:1250, y:260, t:'Exit IR blocked?', s:'Car waiting at exit' },
+    { id:'exitDet', k:'dec', x:1250, y:260, t:'Car at exit?', s:'Exit ultrasonic < 8 cm' },
     { id:'openExit', k:'act', x:1250, y:390, t:'Open exit gate', s:'Servo 2 → 90°' },
-    { id:'exitClear', k:'dec', x:1250, y:520, t:'Exit clear 2 s?', s:'IR back to HIGH' },
+    { id:'exitClear', k:'dec', x:1250, y:520, t:'Exit clear 2 s?', s:'Ultrasonic > 12 cm' },
     { id:'closeExit', k:'act', x:1250, y:650, t:'Close exit gate', s:'Log exit event' },
     { id:'pirDet', k:'dec', x:1250, y:880, t:'Motion detected?', s:'PIR HIGH' },
     { id:'lightOn', k:'act', x:1250, y:1010, t:'Lights on', s:'Restart 30 s timer' },
@@ -131,9 +131,9 @@ const SCENARIOS = [
     ['lockout','Keypad locked 30 s, LCD “Locked 30s”, a pin_fail event appears on the dashboard.'],
     ['prompt','After 30 s the driver can try again.'] ] },
   { id:'exit', t:'Car leaving', steps:[
-    ['exitDet','Car reaches the exit, IR output goes LOW.'],
+    ['exitDet','Car reaches the exit barrier — the exit ultrasonic reads 6 cm.'],
     ['openExit','Exit servo opens. No PIN needed to leave.'],
-    ['exitClear','IR clear for 2 s.'],
+    ['exitClear','Exit ultrasonic reads clear (> 12 cm) for 2 s.'],
     ['closeExit','Exit servo closes; an exit event is logged. The slot it left already turned free on its own sensor.'] ] },
   { id:'gas', t:'Smoke / gas alarm', steps:[
     ['gasRead','MQ-2 is sampled every 500 ms (baseline ≈ 900 after warm-up).'],
@@ -150,7 +150,7 @@ const DATA = {
     { x:990, y:-250, t:'Supabase', s:'Postgres + Realtime' }
   ],
   nodes: [
-    { id:'sensors', k:'act', x:-40, y:0, t:'Sensors & keypad', s:'IR ×5, HC-SR04, PIR, MQ-2, keypad' },
+    { id:'sensors', k:'act', x:-40, y:0, t:'Sensors & keypad', s:'IR ×4, HC-SR04 ×2, PIR, MQ-2, keypad' },
     { id:'fw', k:'start', x:290, y:0, t:'ESP32 firmware', s:'Control core 1 · network core 0' },
     { id:'apiSync', k:'act', x:620, y:-150, t:'POST /api/device/sync', s:'State in → active bookings out' },
     { id:'apiEvent', k:'act', x:620, y:0, t:'POST /api/device/event', s:'Entry, exit, PIN fail, full' },
@@ -172,8 +172,8 @@ const DATA = {
 /* ---------- detail content ---------- */
 const D = {
 esp:{ t:'ESP32 DevKitC · 38-pin', sum:'The brain of the garage. One FreeRTOS task (core 1) runs the control loop — sensors, gates, LCD, keypad. A second task (core 0) talks to the Vercel API, so a slow HTTP request never freezes the keypad or a gate.',
-  kv:[['Usable GPIO','24 (20 I/O + 4 input-only)'],['Used','23 · spare: GPIO12'],['Power','5V pin from the supply, or USB while coding'],['Logic level','3.3 V — no pin is 5 V tolerant']],
-  watch:['Check the metal shield says WROOM-32. On WROVER modules GPIO16/17 belong to PSRAM, and keypad R1/R2 would have to move.','Every 5 V output (HC-SR04 ECHO, MQ-2 AO) goes through a 1 kΩ / 2 kΩ divider before it touches a pin.','GPIO0 is keypad R4 and also the BOOT button: don’t hold keys while powering on.','Never use delay() in loop() — every part of the loop uses millis() timers.'],
+  kv:[['Usable GPIO','24 (20 I/O + 4 input-only)'],['Used','all 24 · no spare left'],['Power','5V pin from the supply, or USB while coding'],['Logic level','3.3 V — no pin is 5 V tolerant']],
+  watch:['Check the metal shield says WROOM-32. On WROVER modules GPIO16/17 belong to PSRAM, and keypad R1/R2 would have to move.','Every 5 V output (both HC-SR04 ECHO pins, MQ-2 AO) goes through a 1 kΩ / 2 kΩ divider before it touches a pin.','GPIO0 is keypad R4 and also the BOOT button: don’t hold keys while powering on.','Never use delay() in loop() — every part of the loop uses millis() timers.'],
   code:`// core 1 = control · core 0 = network
 QueueHandle_t netQ;
 
@@ -233,19 +233,19 @@ void gasMonitor() {
 us:{ t:'HC-SR04 ultrasonic (entry)', sum:'Mounted just before the entry barrier, facing the lane. It tells the system a car is waiting, and later that the car has passed.',
   kv:[['TRIG','GPIO23 (3.3 V trigger is enough)'],['ECHO','GPIO35 through 1 kΩ / 2 kΩ divider'],['Power','5 V rail'],['Thresholds','car < 8 cm · clear > 12 cm']],
   watch:['ECHO outputs 5 V: 1 kΩ from ECHO to GPIO35, 2 kΩ from GPIO35 to GND (5 V × 2/3 ≈ 3.3 V).','Use a pulseIn timeout of 25 ms so a missing echo never stalls the loop.','Different “car” and “clear” distances (hysteresis) stop the barrier twitching at the edge.'],
-  code:`const int TRIG = 23, ECHO = 35;
+  code:`const int TRIG1 = 23, ECHO1 = 35;      // exit sensor: 12 / 27
 
-float readCm() {
-  digitalWrite(TRIG, LOW);  delayMicroseconds(2);
-  digitalWrite(TRIG, HIGH); delayMicroseconds(10);
-  digitalWrite(TRIG, LOW);
-  unsigned long us = pulseIn(ECHO, HIGH, 25000);  // 25 ms timeout
+float readCm(int trig, int echo) {       // shared by both ultrasonics
+  digitalWrite(trig, LOW);  delayMicroseconds(2);
+  digitalWrite(trig, HIGH); delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  unsigned long us = pulseIn(echo, HIGH, 25000);  // 25 ms timeout
   return us ? us / 58.0 : 999;
 }
 
 bool carAtEntry() {
   static bool car = false;
-  float d = readCm();
+  float d = readCm(TRIG1, ECHO1);
   if (!car && d < 8)  car = true;
   if (car  && d > 12) car = false;
   return car;
@@ -270,14 +270,23 @@ void lighting() {
   bool on = emergency || (millis() - lastMotion < 30000);
   digitalWrite(LIGHT, on);
 }` },
-irexit:{ t:'Exit IR sensor', sum:'Sits at the exit barrier. Leaving needs no PIN: when a car blocks the sensor the exit gate opens.',
-  kv:[['OUT','GPIO27'],['Power','3V3 rail'],['Logic','LOW = car at exit']],
-  watch:['Point it across the lane at bumper height of the model, not down at the floor.'],
-  code:`void exitGate() {
+usexit:{ t:'HC-SR04 ultrasonic (exit)', sum:'Same sensor as the entry, mounted before the exit barrier and facing the lane. Leaving needs no PIN: when a car is closer than 8 cm the exit gate opens.',
+  kv:[['TRIG','GPIO12'],['ECHO','GPIO27 through 1 kΩ / 2 kΩ divider'],['Power','5 V rail'],['Thresholds','car < 8 cm · clear > 12 cm']],
+  watch:['ECHO is 5 V: 1 kΩ from ECHO to GPIO27, 2 kΩ from GPIO27 to GND — same as the entry sensor.','GPIO12 must be LOW while the board boots. The HC-SR04 TRIG input does not pull it up, so it is safe — but never put a pull-up resistor on it.','Read the two ultrasonics one after the other (not at the same moment) so one never hears the other’s echo.'],
+  code:`const int TRIG2 = 12, ECHO2 = 27;
+// readCm(trig, echo) is the same function as the entry sensor
+bool carAtExit() {
+  static bool car = false;
+  float d = readCm(TRIG2, ECHO2);
+  if (!car && d < 8)  car = true;
+  if (car  && d > 12) car = false;
+  return car;
+}
+
+void exitGate() {
   static uint32_t clearSince;
-  bool car = digitalRead(27) == LOW;
-  if (car) { exitServo.write(90); clearSince = 0; }
-  else if (exitServo.read() == 90) {
+  if (carAtExit()) { exitServo.write(90); clearSince = 0; }
+  else if (exitOpen) {
     if (!clearSince) clearSince = millis();
     if (millis() - clearSince > 2000) { exitServo.write(0); logEvent("exit"); }
   }
@@ -342,7 +351,7 @@ light:{ t:'Garage light LED', sum:'The energy-saving light, switched by the PIR 
   watch:['It may blink once at boot (GPIO15 is a strapping pin) — harmless.'],
   code:`pinMode(15, OUTPUT);  // driven by lighting()` },
 psu:{ t:'5 V / 2 A power supply', sum:'A phone charger with a USB breakout is enough. It feeds everything that needs 5 V: both servos, MQ-2, HC-SR04, PIR, LCD, and the ESP32 through its 5V pin.',
-  kv:[['5 V rail','servos ×2, MQ-2, HC-SR04, PIR, LCD, ESP32 5V'],['3V3 rail','from the ESP32 3V3 pin → IR ×5, buzzer'],['GND','one common ground for everything']],
+  kv:[['5 V rail','servos ×2, MQ-2, HC-SR04 ×2, PIR, LCD, ESP32 5V'],['3V3 rail','from the ESP32 3V3 pin → slot IR ×4, buzzer'],['GND','one common ground for everything']],
   watch:['Supply GND must be tied to ESP32 GND.','While uploading code over USB, unplug the supply’s wire to the ESP32 5V pin unless you know the board has a protection diode.','Measure the rail with a multimeter before plugging in the ESP32: 4.9–5.2 V.'],
   code:'' },
 
@@ -362,9 +371,9 @@ openEntry:{ sum:'Barrier up.', lcd:['Gate opening...','Drive in'] },
 passed:{ sum:'The car has passed when the ultrasonic reads “clear” (> 12 cm) for 2 continuous seconds.' },
 closeEntry:{ sum:'Barrier down; an entry event is sent (walk-in or booking).' },
 slotUpd:{ sum:'When a bay sensor changes state (after 300 ms debounce) the LED follows in hardware and the new state is queued for the network task.', kv:[['Dashboard','updates in about 1 s through Supabase Realtime']] },
-exitDet:{ sum:'Leaving needs no PIN.' },
+exitDet:{ sum:'Leaving needs no PIN. The exit ultrasonic works exactly like the entry one, with the same 8 cm / 12 cm thresholds.' },
 openExit:{ sum:'Exit barrier up.' },
-exitClear:{ sum:'IR clear for 2 s means the car has left.' },
+exitClear:{ sum:'The exit ultrasonic reading clear (> 12 cm) for 2 s means the car has left.' },
 closeExit:{ sum:'Barrier down, exit event logged.' },
 pirDet:{ sum:'PIR output goes HIGH on movement.' },
 lightOn:{ sum:'Light on and the 30 s timer restarts on every new movement.' },
@@ -445,17 +454,17 @@ res.json({ id, slot: slot_id, pin, expires_in: 900 });   // PIN shown once` }
 
 /* ---------- pin map & tests ---------- */
 const PIN_USE = {
-  '3V3':['Power out → 3V3 rail (IR ×5, buzzer)','power'],'EN':['Reset button','avoid'],'36':['IR slot P1','used'],'39':['IR slot P2','used'],'34':['MQ-2 AO via divider (ADC1)','used'],'35':['HC-SR04 ECHO via divider','used'],'32':['IR slot P3','used'],'33':['IR slot P4','used'],'25':['Buzzer','used'],'26':['PIR OUT','used'],'27':['Exit IR','used'],'14':['Servo — exit','used'],'12':['Spare — keep LOW at boot','spare'],'GND':['Common ground','power'],'13':['Servo — entry','used'],'9':['SPI flash — don’t use','avoid'],'10':['SPI flash — don’t use','avoid'],'11':['SPI flash — don’t use','avoid'],'5V':['5 V in from the supply','power'],
-  '23':['HC-SR04 TRIG','used'],'22':['I2C SCL — LCD','used'],'1':['USB serial TX — don’t use','avoid'],'3':['USB serial RX — don’t use','avoid'],'21':['I2C SDA — LCD','used'],'19':['Keypad C1','used'],'18':['Keypad C2','used'],'5':['Keypad C3','used'],'17':['Keypad R1 (not on WROVER)','used'],'16':['Keypad R2 (not on WROVER)','used'],'4':['Keypad R3','used'],'0':['Keypad R4 · shares BOOT button','used'],'2':['Keypad C4 · on-board LED','used'],'15':['Garage light LED','used'],'8':['SPI flash — don’t use','avoid'],'7':['SPI flash — don’t use','avoid'],'6':['SPI flash — don’t use','avoid']
+  '3V3':['Power out → 3V3 rail (slot IR ×4, buzzer)','power'],'EN':['Reset button','avoid'],'36':['IR slot P1','used'],'39':['IR slot P2','used'],'34':['MQ-2 AO via divider (ADC1)','used'],'35':['Entry HC-SR04 ECHO via divider','used'],'32':['IR slot P3','used'],'33':['IR slot P4','used'],'25':['Buzzer','used'],'26':['PIR OUT','used'],'27':['Exit HC-SR04 ECHO via divider','used'],'14':['Servo — exit','used'],'12':['Exit HC-SR04 TRIG (must stay LOW at boot — no pull-up)','used'],'GND':['Common ground','power'],'13':['Servo — entry','used'],'9':['SPI flash — don’t use','avoid'],'10':['SPI flash — don’t use','avoid'],'11':['SPI flash — don’t use','avoid'],'5V':['5 V in from the supply','power'],
+  '23':['Entry HC-SR04 TRIG','used'],'22':['I2C SCL — LCD','used'],'1':['USB serial TX — don’t use','avoid'],'3':['USB serial RX — don’t use','avoid'],'21':['I2C SDA — LCD','used'],'19':['Keypad C1','used'],'18':['Keypad C2','used'],'5':['Keypad C3','used'],'17':['Keypad R1 (not on WROVER)','used'],'16':['Keypad R2 (not on WROVER)','used'],'4':['Keypad R3','used'],'0':['Keypad R4 · shares BOOT button','used'],'2':['Keypad C4 · on-board LED','used'],'15':['Garage light LED','used'],'8':['SPI flash — don’t use','avoid'],'7':['SPI flash — don’t use','avoid'],'6':['SPI flash — don’t use','avoid']
 };
 const TESTS = [
   ['1','Power rails','Supply alone, multimeter on the rails','4.9–5.2 V on 5 V rail; nothing gets warm'],
   ['2','LCD','I2C scanner, then print “Hello PARKORA”','Address found (0x27/0x3F); text readable after contrast trim'],
   ['3','Keypad','Print every key to Serial','All 16 keys print the right character once per press'],
-  ['4','HC-SR04','Print distance every 100 ms','Stable ±1 cm from 3–30 cm; < 8 cm prints CAR'],
+  ['4','HC-SR04 entry','Print distance every 100 ms','Stable ±1 cm from 3–30 cm; < 8 cm prints CAR'],
   ['5','Servos','Sweep 0° → 90° → 0° on each','Smooth, ESP32 never resets, no buzzing at rest'],
   ['6','Slot IR ×4','Print the 4 states; place the car model','Each flips within 300 ms; its red LED follows'],
-  ['7','Exit IR','Print state; block with the car','LOW when blocked, HIGH when clear'],
+  ['7','HC-SR04 exit','Print both distances, one sensor after the other','Each reads its own lane only; < 8 cm prints CAR at the right gate'],
   ['8','PIR','Wait 60 s, wave a hand','HIGH on movement, LOW a few seconds later'],
   ['9','MQ-2','Warm up, log baseline, unlit lighter gas nearby','Reading clearly above baseline; threshold chosen'],
   ['10','Buzzer & light','Beep patterns, light on/off','Both respond; no reset when combined with servos'],
@@ -693,7 +702,7 @@ function Graph({ view, pos, setPos, sel, onSelect, showPower, hl, extra }) {
   }
 
   const legend = view === 'wiring'
-    ? [['#2f80ed', 'I2C'], ['#9b51e0', 'Keypad'], ['#13a8a8', 'Ultrasonic'], ['#e04f5f', 'Slot IR'], ['#f2994a', 'Servos'], ['#7aa52a', 'MQ-2']].concat(showPower ? [['#d7263d', '5 V'], ['#f08a24', '3.3 V'], ['var(--gnd)', 'GND']] : [])
+    ? [['#2f80ed', 'I2C'], ['#9b51e0', 'Keypad'], ['#13a8a8', 'Ultrasonic in'], ['#0e7c86', 'Ultrasonic out'], ['#e04f5f', 'Slot IR'], ['#f2994a', 'Servos'], ['#7aa52a', 'MQ-2']].concat(showPower ? [['#d7263d', '5 V'], ['#f08a24', '3.3 V'], ['var(--gnd)', 'GND']] : [])
     : [['var(--mute)', 'Flow'], ['var(--acc)', 'Active path']];
 
   return h('div', { className: 'stage', ref: stage, onPointerDown: e => onDown(e, null) },
@@ -724,7 +733,7 @@ function Lcd({ lines }) { return h('div', { className: 'lcd', 'aria-label': 'LCD
 
 const INTRO = {
   wiring: { t: 'How everything is wired', p: 'Every part is drawn at its real pin on the 38-pin board — left column of the board on the left, right column on the right. Click a part to highlight its wires and see the voltage, the warnings and a test snippet. Turn on “Power rails” to see the 5 V, 3.3 V and GND wiring.',
-    kv: [['Board', 'ESP32 DevKitC · 38-pin'], ['Pins used', '23 of 24 usable'], ['Extra parts', 'none — only resistors for the dividers and LEDs'], ['Slot LEDs', 'driven in hardware by the IR sensors']] },
+    kv: [['Board', 'ESP32 DevKitC · 38-pin'], ['Pins used', 'all 24 usable'], ['Extra parts', 'none — only resistors for the dividers and LEDs'], ['Slot LEDs', 'driven in hardware by the IR sensors']] },
   logic: { t: 'How the garage behaves', p: 'The entry flow runs as a state machine in the main loop; the exit lane, lighting and gas safety run beside it in the same loop without blocking each other. Pick a scenario above and step through it, or click any box.',
     kv: [['A', 'walk-in'], ['PIN + #', 'driver with a booking'], ['*', 'clear typed digits'], ['Booking', 'specific bay, PIN valid 15 min']] },
   data: { t: 'How data moves', p: 'The ESP32 never talks to the database directly. It calls three small Node.js functions on Vercel with a device key; they write to Supabase. The React dashboard (on the same Vercel project) gets changes live through Supabase Realtime and creates bookings through the API.',
@@ -774,13 +783,13 @@ function PinMap() {
         h('td', { className: 'g' }, r[0]), h('td', { className: 'g' }, /^\d+$/.test(r[1]) ? r[1] : '—'), h('td', null, u[0]), h('td', null, h('span', { className: 'tag ' + u[1] }, u[1]))); }))));
   return h('div', { className: 'doc' },
     h('h2', null, 'Pin map — ESP32 DevKitC, 38 pins'),
-    h('p', { className: 'lead muted' }, 'Everything fits without extra chips: slot LEDs are driven by the IR sensors themselves, and the keypad uses the two pins the 38-pin board adds (GPIO0 and the second serial pair).'),
+    h('p', { className: 'lead muted' }, 'Everything fits without extra chips, using every usable pin: slot LEDs are driven by the IR sensors themselves, the keypad uses the pins the 38-pin board adds, and the exit ultrasonic takes the last free pin (GPIO12).'),
     h('div', { className: 'summary' },
-      [[used, 'GPIO used'], ['1', 'spare (GPIO12)'], ['2', 'voltage dividers (1k/2k)'], ['5 V · 3.3 V', 'two rails, one GND']].map((s, i) => h('div', { className: 'stat', key: i }, h('b', null, s[0]), h('span', null, s[1])))),
+      [[used, 'GPIO used'], ['0', 'spare pins left'], ['3', 'voltage dividers (1k/2k)'], ['5 V · 3.3 V', 'two rails, one GND']].map((s, i) => h('div', { className: 'stat', key: i }, h('b', null, s[0]), h('span', null, s[1])))),
     h('div', { className: 'cols' }, table(LEFT, 'Left'), table(RIGHT, 'Right')),
     h('h3', null, 'Resistors you need'),
     h('table', { className: 't stack' }, h('thead', null, h('tr', null, h('th', null, 'Where'), h('th', null, 'Values'), h('th', null, 'Why'))),
-      h('tbody', null, [['HC-SR04 ECHO → GPIO35', '1 kΩ series + 2 kΩ to GND', '5 V echo → 3.3 V'], ['MQ-2 AO → GPIO34', '1 kΩ series + 2 kΩ to GND', 'analog up to 5 V → 3.3 V'], ['Slot LEDs ×4', '1 kΩ each, 3V3 → LED → sensor OUT', 'LED lights when the bay is occupied'], ['Garage light', '220 Ω', 'limit LED current to ~10 mA']].map((r, i) => h('tr', { key: i }, r.map((c, j) => h('td', { key: j }, c)))))));
+      h('tbody', null, [['Entry HC-SR04 ECHO → GPIO35', '1 kΩ series + 2 kΩ to GND', '5 V echo → 3.3 V'], ['Exit HC-SR04 ECHO → GPIO27', '1 kΩ series + 2 kΩ to GND', '5 V echo → 3.3 V'], ['MQ-2 AO → GPIO34', '1 kΩ series + 2 kΩ to GND', 'analog up to 5 V → 3.3 V'], ['Slot LEDs ×4', '1 kΩ each, 3V3 → LED → sensor OUT', 'LED lights when the bay is occupied'], ['Garage light', '220 Ω', 'limit LED current to ~10 mA']].map((r, i) => h('tr', { key: i }, r.map((c, j) => h('td', { key: j }, c)))))));
 }
 function Tests() {
   return h('div', { className: 'doc' },
