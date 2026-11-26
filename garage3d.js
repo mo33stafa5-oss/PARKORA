@@ -2,10 +2,11 @@
 (function () {
 const CSS = `
 .p3{display:grid;grid-template-columns:minmax(0,1fr) 390px;height:calc(100vh - var(--hh,118px));min-height:560px}
-.s3{position:relative;overflow:hidden;perspective:1700px;perspective-origin:50% 35%;touch-action:none;cursor:grab;
+.s3{position:relative;overflow:hidden;contain:layout paint style;perspective:1700px;perspective-origin:50% 35%;touch-action:none;cursor:grab;
   background:radial-gradient(120% 90% at 50% 20%,light-dark(#fbfaf6,#1a232a) 0%,light-dark(#e7e5dc,#0c1115) 75%)}
 .s3.drag{cursor:grabbing}
-.w3{position:absolute;left:50%;top:58%;width:0;height:0;transform-style:preserve-3d;transition:transform .5s ease}
+.w3{position:absolute;left:50%;top:56%;width:0;height:0;transform-style:preserve-3d;will-change:transform}
+.w3.anim{transition:transform .9s cubic-bezier(.3,.7,.2,1)}
 .s3.drag .w3{transition:none}
 .bx,.g,.pl,.bb,.part{position:absolute;left:0;top:0;transform-style:preserve-3d}
 .part{transition:transform 1.1s cubic-bezier(.2,.85,.25,1)}
@@ -14,26 +15,26 @@ const CSS = `
 .fc::after{content:"";position:absolute;inset:0;background:#000;opacity:var(--sh,0);pointer-events:none}
 .f-front{--sh:.07}.f-right,.f-left{--sh:.18}.f-back{--sh:.26}.f-bottom{--sh:.45}
 .mat .fc{background-color:var(--matc)}
-.wood{--matc:#c79b67}.wood .mat .fc{background-image:repeating-linear-gradient(92deg,rgba(80,45,10,.10) 0 2px,transparent 2px 9px),repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1px,transparent 1px 13px)}
-.pla{--matc:#e6e8ea}.pla .mat .fc{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px)}
+.wood{--matc:#c99d69}
+.pla{--matc:#e6e8ea}
 .floor .f-top{background:light-dark(#9aa1a6,#7f878d) !important;background-image:none !important}
-.wood .floor .f-top{background:#b98d5c !important;background-image:repeating-linear-gradient(92deg,rgba(80,45,10,.12) 0 2px,transparent 2px 11px) !important}
+.wood .floor .f-top{background:#b98d5c !important}
 .pla .floor .f-top{background:#d3d6d9 !important}
 .pl>div{position:absolute}
 .bay{font:800 22px/1 Archivo,sans-serif;color:rgba(255,255,255,.85);display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;border:3px solid #f5c400;border-top:0}
 .bay.res{background:rgba(245,196,0,.18)}
 .stripes{background:repeating-linear-gradient(90deg,#d7263d 0 12px,#fff 12px 24px) !important}
 .lcdface{background:#1f4fbf;display:flex;flex-direction:column;justify-content:center;padding:0 3px;box-shadow:inset 0 0 0 2px #133a8f}
-.lcdface span{font:700 5.2px/1.25 "IBM Plex Mono",monospace;color:#e8f0ff;white-space:pre;letter-spacing:.2px}
-.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2px;padding:2px;background:#111}
-.keys span{background:#e9e9e9;font:700 5px/7px "IBM Plex Sans";color:#222;text-align:center;border-radius:1px}
+.lcdface span{font:700 8px/1.3 "IBM Plex Mono",monospace;color:#e8f0ff;white-space:pre;letter-spacing:.2px}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:3px;background:#111}
+.keys span{background:#e9e9e9;font:700 8px/10px "IBM Plex Sans";color:#222;text-align:center;border-radius:1px}
 .keys span.k{background:#f5b800}
 .pcb-blue{--c:#1d5fa8}.pcb-red{--c:#b8262f}.pcb-dark{--c:#14324a}
-.eye{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(#ddd,#888);top:5px}
+.eye{position:absolute;width:var(--e,10px);height:var(--e,10px);border-radius:50%;background:#9aa3a9;box-shadow:inset 0 0 0 3px #d9dee1;top:5px}
 .led .fc{background:#4b1010}
-.led.on .fc{background:#ff3b3b;box-shadow:0 0 14px 4px rgba(255,40,40,.9)}
+.led.on .fc{background:#ff2a2a}.led.on .f-top{background:#ff8080}
 .lamp .fc{background:#7a6a33}
-.lights .lamp .fc{background:#fff3b0;box-shadow:0 0 24px 8px rgba(255,220,90,.9)}
+.lights .lamp .fc{background:#fff6c2}
 .pool{background:radial-gradient(closest-side,rgba(255,226,120,.55),rgba(255,226,120,0));opacity:0;transition:opacity .6s}
 .lights .pool{opacity:1}
 .beam{background:linear-gradient(90deg,rgba(19,168,168,.55),rgba(19,168,168,0));opacity:0;transition:opacity .3s}
@@ -41,11 +42,11 @@ const CSS = `
 .irbeam{background:linear-gradient(270deg,rgba(255,60,60,.55),rgba(255,60,60,0));opacity:0;transition:opacity .3s}
 .irbeam.on{opacity:1}
 .win{position:absolute;inset:2px 3px;background:linear-gradient(160deg,#bfe0f5,#4f7fa3);border-radius:2px}
-.hl-part .fc{box-shadow:inset 0 0 0 2px #f5b800}
-.bb{transform:translate3d(var(--x),var(--y),var(--z)) rotateY(calc(var(--ry) * -1)) rotateX(calc(var(--rx) * -1))}
-.lbl{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;font:600 12px/1 "IBM Plex Sans",sans-serif;background:light-dark(#14202a,#f1f4f6);color:light-dark(#fff,#14202a);padding:5px 8px;border-radius:6px;pointer-events:none}
+.hl-part .fc{outline:2px solid #f5b800;outline-offset:-2px}
+.lbl{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;font:600 15px/1 "IBM Plex Sans",sans-serif;background:light-dark(#14202a,#f1f4f6);color:light-dark(#fff,#14202a);padding:7px 10px;border-radius:6px;pointer-events:none}
 .lbl::after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;margin-left:-4px;background:inherit;transform:rotate(45deg)}
-.nolabels .lbl{display:none}
+.nolabels .lb,.quiet .lb{display:none}
+.smoke{display:none}.gas .smoke{display:block}
 .puff{position:absolute;width:40px;height:40px;margin:-20px;border-radius:50%;background:radial-gradient(rgba(120,120,120,.75),rgba(120,120,120,0) 70%);opacity:0}
 .gas .puff{animation:puff 2.4s ease-out infinite}
 @keyframes puff{0%{opacity:0;transform:translateY(0) scale(.4)}20%{opacity:.9}100%{opacity:0;transform:translateY(-120px) scale(2.6)}}
@@ -111,10 +112,9 @@ function vplane(parent, o) {                   // vertical, facing +z, rotated b
   return d;
 }
 function grp(parent, t, cls) { const g = el('div', 'g ' + (cls || ''), parent); if (t) g.style.transform = t; return g; }
-function label(parent, text, x, y, z) {
-  const b = el('div', 'bb', parent); b.style.setProperty('--x', x + 'px'); b.style.setProperty('--y', (-y) + 'px'); b.style.setProperty('--z', z + 'px');
-  el('span', 'lbl', b, null).textContent = text; return b;
-}
+let BBS = [];
+function billboard(parent, cls, x, y, z) { const b = el('div', 'bb ' + cls, parent); BBS.push({ el: b, x, y: -y, z }); return b; }
+function label(parent, text, x, y, z) { const b = billboard(parent, 'lb', x, y, z); el('span', 'lbl', b, null).textContent = text; return b; }
 
 const STEPS = [
   { k: 'base', t: 'Base plate', d: 'Everything mounts on one board. The front apron is the approach road.' },
@@ -153,122 +153,148 @@ function mount(host) {
   const aside = el('aside', null, root);
 
   /* ---------- camera ---------- */
-  const cam = { rx: -32, ry: -24, s: .95 };
-  const fitScale = () => { const w = stage.clientWidth, hgt = stage.clientHeight; return Math.max(.35, Math.min(1.2, Math.min(w / 900, hgt / 700))); };
-  let base = fitScale();
-  function applyCam() {
-    world.style.transform = 'scale3d(' + cam.s * base + ',' + cam.s * base + ',' + cam.s * base + ') rotateX(' + cam.rx + 'deg) rotateY(' + cam.ry + 'deg) translate3d(0,0,-80px)';
-    world.style.setProperty('--rx', cam.rx + 'deg'); world.style.setProperty('--ry', cam.ry + 'deg');
+  BBS = [];
+  const HOME = { rx: -34, ry: -22, s: 1, cx: 0, cy: 0, cz: 60 };
+  const cam = Object.assign({}, HOME);
+  let autoCam = true;
+  const FOCUS = {
+    base: HOME, walls: HOME, final: HOME,
+    lines: { rx: -58, ry: 0, s: 1.35, cx: 0, cy: 0, cz: -80 },
+    gates: { rx: -24, ry: -18, s: 2.2, cx: -190, cy: 60, cz: 210 },
+    us: { rx: -18, ry: -70, s: 2.6, cx: -305, cy: 50, cz: 258 },
+    slotir: { rx: -26, ry: 0, s: 1.7, cx: 0, cy: 55, cz: -190 },
+    exitir: { rx: -20, ry: 62, s: 2.6, cx: 300, cy: 35, cz: 170 },
+    console: { rx: -14, ry: 40, s: 3, cx: -160, cy: 95, cz: 268 },
+    pir: { rx: -22, ry: 0, s: 2.6, cx: 0, cy: 70, cz: -200 },
+    mq2: { rx: -22, ry: -62, s: 2.6, cx: -300, cy: 50, cz: -20 },
+    elec: { rx: -40, ry: -10, s: 2.3, cx: 70, cy: 20, cz: 290 }
+  };
+  const fitScale = () => { const w = stage.clientWidth, hgt = stage.clientHeight; return Math.max(.32, Math.min(1.25, Math.min(w / 860, hgt / 640))); };
+  let base = fitScale(), raf = 0, bbShown = true;
+  function paint() {
+    raf = 0;
+    const k = cam.s * base;
+    world.style.transform = 'scale3d(' + k + ',' + k + ',' + k + ') rotateX(' + cam.rx + 'deg) rotateY(' + cam.ry + 'deg) translate3d(' + (-cam.cx) + 'px,' + cam.cy + 'px,' + (-cam.cz) + 'px)';
+    if (bbShown || world.classList.contains('gas')) {
+      const r = ' rotateY(' + (-cam.ry) + 'deg) rotateX(' + (-cam.rx) + 'deg) scale(' + (1 / Math.max(1, cam.s)).toFixed(3) + ')';
+      for (const b of BBS) b.el.style.transform = 'translate3d(' + b.x + 'px,' + b.y + 'px,' + b.z + 'px)' + r;
+    }
   }
-  applyCam();
+  const applyCam = () => { if (!raf) raf = requestAnimationFrame(paint); };
+  function focus(f, smooth) { world.classList.toggle('anim', smooth !== false); Object.assign(cam, f); applyCam(); }
   const ro = new ResizeObserver(() => { base = fitScale(); applyCam(); }); ro.observe(stage);
   const ptrs = new Map(); let last = null, pinch = null;
-  stage.addEventListener('pointerdown', e => { if (e.target.closest('.t3')) return; stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); stage.classList.add('drag'); last = { x: e.clientX, y: e.clientY }; });
+  stage.addEventListener('pointerdown', e => { if (e.target.closest('.t3')) return; stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); stage.classList.add('drag'); world.classList.remove('anim'); last = { x: e.clientX, y: e.clientY }; });
   stage.addEventListener('pointermove', e => {
     if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch) cam.s = Math.min(2.4, Math.max(.4, cam.s * d / pinch)); pinch = d; applyCam(); return; }
-    cam.ry += (e.clientX - last.x) * .35; cam.rx = Math.max(-80, Math.min(-6, cam.rx - (e.clientY - last.y) * .25)); last = { x: e.clientX, y: e.clientY }; applyCam();
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch) cam.s = Math.min(4, Math.max(.4, cam.s * d / pinch)); pinch = d; applyCam(); return; }
+    cam.ry += (e.clientX - last.x) * .35; cam.rx = Math.max(-82, Math.min(-6, cam.rx - (e.clientY - last.y) * .25)); last = { x: e.clientX, y: e.clientY }; applyCam();
   });
   const endPtr = e => { ptrs.delete(e.pointerId); pinch = null; if (!ptrs.size) stage.classList.remove('drag'); else last = [...ptrs.values()][0]; };
   stage.addEventListener('pointerup', endPtr); stage.addEventListener('pointercancel', endPtr);
-  stage.addEventListener('wheel', e => { e.preventDefault(); cam.s = Math.min(2.4, Math.max(.4, cam.s * Math.exp(-e.deltaY * .0012))); applyCam(); }, { passive: false });
+  stage.addEventListener('wheel', e => { e.preventDefault(); world.classList.remove('anim'); cam.s = Math.min(4, Math.max(.4, cam.s * Math.exp(-e.deltaY * .0012))); applyCam(); }, { passive: false });
   const tb = (txt, fn, lab) => { const b = el('button', 'tb', tools); b.textContent = txt; if (lab) b.setAttribute('aria-label', lab); b.onclick = fn; return b; };
-  tb('+', () => { cam.s = Math.min(2.4, cam.s * 1.15); applyCam(); }, 'Zoom in');
-  tb('−', () => { cam.s = Math.max(.4, cam.s / 1.15); applyCam(); }, 'Zoom out');
-  tb('Front', () => { Object.assign(cam, { rx: -22, ry: 0, s: 1 }); applyCam(); });
-  tb('Top', () => { Object.assign(cam, { rx: -78, ry: 0, s: 1 }); applyCam(); });
-  tb('3/4 view', () => { Object.assign(cam, { rx: -32, ry: -24, s: .95 }); applyCam(); });
+  tb('+', () => focus({ s: Math.min(4, cam.s * 1.25) }), 'Zoom in');
+  tb('−', () => focus({ s: Math.max(.4, cam.s / 1.25) }), 'Zoom out');
+  tb('Overview', () => focus(HOME));
+  tb('Front', () => focus({ rx: -20, ry: 0, s: 1.05, cx: 0, cy: 20, cz: 60 }));
+  tb('Top', () => focus({ rx: -80, ry: 0, s: 1, cx: 0, cy: 0, cz: 70 }));
+  const bAuto = tb('Auto camera', () => { autoCam = !autoCam; bAuto.setAttribute('aria-pressed', autoCam); });
+  bAuto.setAttribute('aria-pressed', 'true');
 
-  /* ---------- model ---------- */
+  /* ---------- model (parts drawn large so they read clearly) ---------- */
   const parts = {};
   const P = k => { const p = el('div', 'part', world); p.dataset.k = k; parts[k] = p; return p; };
   const refs = {};
+  const ARM_Y = G + 72, ARM_Z = GATE_Z + 26;
 
   // base
   let p = P('base');
-  box(p, { x: 0, y: 0, z: 90, w: 660, h: G, d: 640, cls: 'mat floor' });
-  plane(p, { x: ENTRY_X, z: 300, w: 4, d: 180, cls: '', html: '' }).style.background = 'rgba(255,255,255,.6)';
-  label(p, 'Base plate', 0, 20, 330);
+  box(p, { x: 0, y: 0, z: 95, w: 680, h: G, d: 650, cls: 'mat floor' });
+  plane(p, { x: ENTRY_X, z: 305, w: 5, d: 170 }).style.background = 'rgba(255,255,255,.6)';
+  label(p, 'Base plate', 0, 24, 360);
 
   // bays
   p = P('lines');
-  refs.bays = BAYS.map((x, i) => { const b = plane(p, { x, z: -110, w: 128, d: 196, cls: 'bay' + (i === 1 ? ' res' : ''), html: 'P' + (i + 1) }); return b; });
-  plane(p, { x: 0, z: 110, w: 600, d: 3 }).style.background = 'rgba(255,255,255,.55)';
-  label(p, 'Bays P1–P4', 0, 30, -110);
+  refs.bays = BAYS.map((x, i) => plane(p, { x, z: -110, w: 128, d: 196, cls: 'bay' + (i === 1 ? ' res' : ''), html: 'P' + (i + 1) }));
+  plane(p, { x: 0, z: 110, w: 600, d: 4 }).style.background = 'rgba(255,255,255,.55)';
+  label(p, 'Bays P1–P4', 0, 34, -110);
 
   // walls
   p = P('walls');
   box(p, { x: 0, y: G, z: -215, w: 660, h: 72, d: 10, cls: 'mat' });
   box(p, { x: -325, y: G, z: -5, w: 10, h: 72, d: 410, cls: 'mat' });
   box(p, { x: 325, y: G, z: -5, w: 10, h: 72, d: 410, cls: 'mat' });
-  box(p, { x: 0, y: G, z: GATE_Z, w: 356, h: 40, d: 10, cls: 'mat' });
-  label(p, 'Walls', -325, 100, -100);
+  box(p, { x: 0, y: G, z: GATE_Z, w: 350, h: 40, d: 10, cls: 'mat' });
+  label(p, 'Walls', -325, 104, -100);
 
   // gates
   p = P('gates');
   const gate = (px, dir) => {
-    box(p, { x: px, y: G, z: GATE_Z, w: 14, h: 56, d: 14, cls: 'mat' });
-    box(p, { x: px, y: G + 50, z: GATE_Z + 11, w: 24, h: 12, d: 10, c: '#2f6fd6' });
-    const piv = grp(p, 'translate3d(' + px + 'px,' + (-(G + 56)) + 'px,' + (GATE_Z + 19) + 'px) rotateZ(0deg)');
+    box(p, { x: px, y: G, z: GATE_Z, w: 22, h: 62, d: 22, cls: 'mat' });
+    box(p, { x: px, y: G + 60, z: GATE_Z + 12, w: 42, h: 22, d: 22, c: '#2f6fd6', faces: { front: '<b style="position:absolute;inset:0;display:grid;place-items:center;font:700 8px/1 IBM Plex Sans;color:#fff">SG90</b>' } });
+    const piv = grp(p, 'translate3d(' + px + 'px,' + (-ARM_Y) + 'px,' + ARM_Z + 'px) rotateZ(0deg)');
     piv.style.transition = 'transform .9s ease-in-out';
-    box(piv, { x: dir * 58, y: -3, z: 0, w: 112, h: 6, d: 4, c: '#fff', fcls: { front: 'stripes', back: 'stripes', top: 'stripes' } });
+    box(piv, { x: dir * 60, y: -4, z: 0, w: 120, h: 8, d: 6, c: '#fff', fcls: { front: 'stripes', back: 'stripes', top: 'stripes' } });
+    box(piv, { x: 0, y: -6, z: 0, w: 12, h: 12, d: 8, c: '#e9eef1' });
     return piv;
   };
   refs.entryArm = gate(-187, -1); refs.exitArm = gate(187, 1);
-  label(p, 'Servo SG90 · GPIO13', -187, 90, GATE_Z); label(p, 'Servo SG90 · GPIO14', 187, 90, GATE_Z);
+  label(p, 'Servo SG90 · GPIO13', -187, 112, GATE_Z); label(p, 'Servo SG90 · GPIO14', 187, 112, GATE_Z);
 
   // ultrasonic
   p = P('us');
-  box(p, { x: -318, y: G, z: 258, w: 10, h: 34, d: 10, cls: 'mat' });
-  box(p, { x: -310, y: G + 26, z: 258, w: 4, h: 20, d: 44, cls: 'pcb-blue', faces: { right: '<i class="eye" style="left:7px"></i><i class="eye" style="left:27px"></i>' } });
-  refs.usBeam = plane(p, { x: -250, y: G + 36, z: 258, w: 116, d: 34, cls: 'beam' });
-  label(p, 'HC-SR04 · TRIG 23 / ECHO 35', -310, 70, 258);
+  box(p, { x: -322, y: G, z: 258, w: 14, h: 40, d: 14, cls: 'mat' });
+  box(p, { x: -310, y: G + 30, z: 258, w: 6, h: 32, d: 74, cls: 'pcb-blue', skip: ['bottom', 'left'], faces: { right: '<i class="eye" style="--e:24px;left:8px;top:4px"></i><i class="eye" style="--e:24px;left:42px;top:4px"></i>' } });
+  refs.usBeam = plane(p, { x: -250, y: G + 46, z: 258, w: 112, d: 60, cls: 'beam' });
+  label(p, 'HC-SR04 · TRIG 23 / ECHO 35', -310, 86, 258);
 
   // slot IR + LEDs
   p = P('slotir');
-  refs.leds = BAYS.map((x, i) => {
-    box(p, { x, y: G + 14, z: -208, w: 30, h: 13, d: 4, cls: 'pcb-red', faces: { front: '<i class="eye" style="left:3px;top:1.5px"></i><i class="eye" style="left:17px;top:1.5px"></i>' } });
-    return box(p, { x, y: G + 72, z: -215, w: 9, h: 7, d: 9, cls: 'led' });
+  refs.leds = BAYS.map(x => {
+    box(p, { x, y: G + 16, z: -205, w: 52, h: 22, d: 6, cls: 'pcb-red', skip: ['bottom', 'back'], faces: { front: '<i class="eye" style="--e:14px;left:6px;top:4px"></i><i class="eye" style="--e:14px;left:30px;top:4px"></i>' } });
+    return box(p, { x, y: G + 72, z: -215, w: 16, h: 12, d: 16, cls: 'led' });
   });
-  label(p, 'IR ×4 · GPIO36/39/32/33', -130, 110, -215);
+  label(p, 'IR ×4 · GPIO36/39/32/33', -130, 120, -215);
 
   // exit IR
   p = P('exitir');
-  box(p, { x: 318, y: G + 14, z: 165, w: 4, h: 13, d: 30, cls: 'pcb-red', faces: { left: '<i class="eye" style="left:3px;top:1.5px"></i><i class="eye" style="left:17px;top:1.5px"></i>' } });
-  refs.exitBeam = plane(p, { x: 262, y: G + 20, z: 165, w: 110, d: 10, cls: 'irbeam' });
-  label(p, 'Exit IR · GPIO27', 318, 60, 165);
+  box(p, { x: 317, y: G + 16, z: 165, w: 6, h: 22, d: 52, cls: 'pcb-red', skip: ['bottom', 'right'], faces: { left: '<i class="eye" style="--e:14px;left:6px;top:4px"></i><i class="eye" style="--e:14px;left:30px;top:4px"></i>' } });
+  refs.exitBeam = plane(p, { x: 258, y: G + 26, z: 165, w: 110, d: 16, cls: 'irbeam' });
+  label(p, 'Exit IR · GPIO27', 317, 70, 165);
 
   // console
   p = P('console');
-  box(p, { x: -170, y: G, z: 262, w: 14, h: 52, d: 14, cls: 'mat' });
-  const lcdHtml = '<div class="lcdface" style="position:absolute;inset:3px 3px 50% 3px"><span>PARKORA</span><span>Free 1 of 4</span></div>';
-  const keyHtml = '<div class="keys" style="position:absolute;left:4px;right:4px;bottom:3px;height:46%">' + '123A456B789C*0#D'.split('').map(k => '<span data-k="' + k + '">' + k + '</span>').join('') + '</div>';
-  const head = box(p, { x: -170, y: G + 50, z: 262, w: 46, h: 44, d: 12, ry: -40, c: '#22282d', faces: { front: lcdHtml + keyHtml } });
+  box(p, { x: -160, y: G, z: 268, w: 18, h: 52, d: 18, cls: 'mat' });
+  const lcdHtml = '<div class="lcdface" style="position:absolute;inset:5px 5px 52% 5px"><span>PARKORA</span><span>Free 1 of 4</span></div>';
+  const keyHtml = '<div class="keys" style="position:absolute;left:8px;right:8px;bottom:5px;height:46%">' + '123A456B789C*0#D'.split('').map(k => '<span data-k="' + k + '">' + k + '</span>').join('') + '</div>';
+  const head = box(p, { x: -160, y: G + 50, z: 268, w: 84, h: 88, d: 14, ry: -40, c: '#22282d', faces: { front: lcdHtml + keyHtml } });
   refs.lcd = head.querySelectorAll('.lcdface span'); refs.keys = {}; head.querySelectorAll('.keys span').forEach(s => refs.keys[s.dataset.k] = s);
-  label(p, 'LCD 16×2 + keypad 4×4', -170, 112, 262);
+  label(p, 'LCD 16×2 + keypad 4×4', -160, 156, 268);
 
   // PIR + light
   p = P('pir');
-  box(p, { x: 0, y: G + 50, z: -206, w: 22, h: 18, d: 8, c: '#f4f4f4', faces: { front: '<i style="position:absolute;inset:3px 4px;border-radius:50%;background:radial-gradient(#fff,#cfcfcf)"></i>' } });
-  box(p, { x: 0, y: G + 72, z: -205, w: 50, h: 8, d: 14, cls: 'lamp' });
+  box(p, { x: 0, y: G + 34, z: -203, w: 42, h: 34, d: 14, c: '#f4f4f4', skip: ['bottom', 'back'], faces: { front: '<i style="position:absolute;inset:4px 6px;border-radius:50%;background:#e3e3e3;box-shadow:inset 0 0 0 3px #fff"></i>' } });
+  box(p, { x: 0, y: G + 72, z: -205, w: 90, h: 12, d: 22, cls: 'lamp' });
   refs.pool = plane(p, { x: 0, z: -40, w: 620, d: 420, cls: 'pool' });
-  label(p, 'PIR · GPIO26', 40, 80, -206); label(p, 'Light · GPIO15', -40, 100, -205);
+  label(p, 'PIR · GPIO26', 60, 84, -203); label(p, 'Light · GPIO15', -60, 112, -205);
 
   // MQ-2 + buzzer
   p = P('mq2');
-  box(p, { x: -318, y: G + 34, z: -20, w: 4, h: 22, d: 30, cls: 'pcb-blue', faces: { right: '<i style="position:absolute;left:6px;top:2px;width:18px;height:18px;border-radius:50%;background:repeating-radial-gradient(#ccc 0 1px,#888 1px 2px)"></i>' } });
+  box(p, { x: -316, y: G + 26, z: -20, w: 6, h: 42, d: 58, cls: 'pcb-blue', skip: ['bottom', 'left'], faces: { right: '<i style="position:absolute;left:13px;top:6px;width:30px;height:30px;border-radius:50%;background:#9aa3a9;box-shadow:inset 0 0 0 4px #d5dadd"></i>' } });
   const puffs = grp(p, null, 'smoke');
-  [[-290, 60, -20], [-270, 50, 10], [-280, 70, -45], [-255, 40, -10]].forEach((q, i) => { const b = el('div', 'bb', puffs); b.style.setProperty('--x', q[0] + 'px'); b.style.setProperty('--y', (-q[1]) + 'px'); b.style.setProperty('--z', q[2] + 'px'); const pf = el('i', 'puff', b); pf.style.animationDelay = (i * .55) + 's'; });
-  refs.smoke = puffs;
-  refs.buz = box(p, { x: -40, y: G, z: 280, w: 14, h: 10, d: 14, c: '#1d1f22', cls: 'buz' });
-  label(p, 'MQ-2 · GPIO34', -318, 75, -20); label(p, 'Buzzer · GPIO25', -40, 35, 280);
+  [[-285, 70, -20], [-262, 55, 12], [-275, 80, -48], [-248, 45, -8]].forEach((q, i) => { const b = billboard(puffs, '', q[0], q[1], q[2]); const pf = el('i', 'puff', b); pf.style.animationDelay = (i * .55) + 's'; });
+  refs.buz = box(p, { x: -60, y: G, z: 292, w: 30, h: 22, d: 30, c: '#1d1f22', cls: 'buz', faces: { top: '<i style="position:absolute;inset:9px;border-radius:50%;background:#555"></i>' } });
+  label(p, 'MQ-2 · GPIO34', -316, 90, -20); label(p, 'Buzzer · GPIO25', -60, 50, 292);
 
   // electronics
   p = P('elec');
-  box(p, { x: 40, y: G, z: 280, w: 62, h: 4, d: 26, cls: 'pcb-dark', fcls: { top: 'pins' } });
-  box(p, { x: 46, y: G + 4, z: 280, w: 20, h: 3, d: 15, c: '#c3cbd1' });
-  box(p, { x: 120, y: G, z: 280, w: 52, h: 24, d: 32, c: '#2a2e33' });
-  label(p, 'ESP32 DevKitC', 40, 30, 280); label(p, '5 V / 2 A supply', 120, 46, 280);
+  box(p, { x: 50, y: G, z: 292, w: 120, h: 6, d: 50, cls: 'pcb-dark' });
+  box(p, { x: 62, y: G + 6, z: 292, w: 42, h: 5, d: 30, c: '#c3cbd1' });
+  box(p, { x: 50, y: G + 6, z: 272, w: 110, h: 3, d: 5, c: '#c9a24a', skip: ['bottom', 'back', 'left', 'right'] });
+  box(p, { x: 50, y: G + 6, z: 312, w: 110, h: 3, d: 5, c: '#c9a24a', skip: ['bottom', 'back', 'left', 'right'] });
+  box(p, { x: 150, y: G, z: 292, w: 70, h: 40, d: 56, c: '#2a2e33', faces: { front: '<b style="position:absolute;inset:0;display:grid;place-items:center;font:700 11px/1 IBM Plex Sans;color:#ddd">5V 2A</b>' } });
+  label(p, 'ESP32 DevKitC', 50, 44, 292); label(p, '5 V / 2 A supply', 150, 72, 292);
 
   // cars
   p = P('final');
@@ -292,7 +318,7 @@ function mount(host) {
   const place = (o, s) => { Object.assign(o, s); o.el.style.transition = 'none'; o.el.style.transform = 'translate3d(' + o.x + 'px,' + (-G) + 'px,' + o.z + 'px) rotateY(' + o.h + 'deg)'; o.el.style.display = ''; };
   const sleep = (ms, t) => new Promise((res, rej) => setTimeout(() => (t === token ? res() : rej('cancel')), ms));
   const move = (o, s, ms, t) => { Object.assign(o, s); void o.el.offsetWidth; o.el.style.transition = 'transform ' + ms + 'ms ease-in-out'; o.el.style.transform = 'translate3d(' + o.x + 'px,' + (-G) + 'px,' + o.z + 'px) rotateY(' + o.h + 'deg)'; return sleep(ms, t); };
-  const arm = (which, open) => { const a = which === 'entry' ? refs.entryArm : refs.exitArm, x = which === 'entry' ? -187 : 187; a.style.transform = 'translate3d(' + x + 'px,' + (-(G + 56)) + 'px,' + (GATE_Z + 19) + 'px) rotateZ(' + (open ? (which === 'entry' ? 90 : -90) : 0) + 'deg)'; state[which] = open ? 'open' : 'closed'; hud(); };
+  const arm = (which, open) => { const a = which === 'entry' ? refs.entryArm : refs.exitArm, x = which === 'entry' ? -187 : 187; a.style.transform = 'translate3d(' + x + 'px,' + (-ARM_Y) + 'px,' + ARM_Z + 'px) rotateZ(' + (open ? (which === 'entry' ? 90 : -90) : 0) + 'deg)'; state[which] = open ? 'open' : 'closed'; hud(); };
   const lcd = (a, b) => { refs.lcd[0].textContent = a; refs.lcd[1].textContent = b; state.lcd = [a, b]; if (lm1) { lm1.textContent = (a + ' '.repeat(16)).slice(0, 16); lm2.textContent = (b + ' '.repeat(16)).slice(0, 16); } };
   const led = (i, on) => { refs.leds[i].classList.toggle('on', on); state.occ[i] = on; hud(); };
   const lights = on => { world.classList.toggle('lights', on); stage.classList.toggle('dark', !on && mode === 'demo'); state.light = on; hud(); };
@@ -312,8 +338,8 @@ function mount(host) {
   const bPlay = el('button', 'btn pri', ctrl, 'Assemble'); const bPrev = el('button', 'btn', ctrl, 'Previous'); const bNext = el('button', 'btn', ctrl, 'Next');
   const opts = el('div', null, buildBox); opts.style.marginTop = '10px';
   const mk = (txt, on, fn) => { const l = el('label', 'chk', opts); const i = el('input', null, l); i.type = 'checkbox'; i.checked = on; el('span', null, l).textContent = txt; i.onchange = () => fn(i.checked); return i; };
-  mk('Exploded view', false, v => { exploded = v; render(); });
-  const labChk = mk('Show labels', true, v => stage.classList.toggle('nolabels', !v));
+  mk('Exploded view', false, v => { exploded = v; render(); if (v) focus(Object.assign({}, HOME, { s: .85, cy: 120 })); });
+  const labChk = mk('Show labels', true, v => { stage.classList.toggle('nolabels', !v); bbShown = v; applyCam(); });
   const matRow = el('label', 'chk', opts); el('span', null, matRow).textContent = 'Model material';
   const sel = el('select', 'tb', matRow); sel.innerHTML = '<option value="wood">Wood (MDF)</option><option value="pla">3D print (PLA)</option>';
   sel.onchange = () => { world.classList.remove('wood', 'pla'); world.classList.add(sel.value); };
@@ -343,6 +369,7 @@ function mount(host) {
       part.classList.toggle('out', !inn);
       part.style.transform = !inn ? 'translate3d(0,-700px,0)' : (exploded && mode === 'build' ? 'translate3d(0,' + (-LIFT[s.k]) + 'px,0)' : 'none');
       part.classList.toggle('hl-part', mode === 'build' && i === step && step < STEPS.length - 1);
+      part.classList.toggle('quiet', mode === 'build' && !exploded && i !== step && step < STEPS.length - 1);
     });
     stepLis.forEach((li, i) => li.className = i === step ? 'cur' : '');
     const showCars = mode === 'demo' || step >= STEPS.length - 1;
@@ -354,13 +381,13 @@ function mount(host) {
     if (mode === 'build') { capText.textContent = (step + 1) + ' / ' + STEPS.length + ' · ' + STEPS[step].t + ' — ' + STEPS[step].d; led(0, step >= STEPS.length - 1); led(2, step >= STEPS.length - 1); }
     bPrev.disabled = step === 0; bNext.disabled = step === STEPS.length - 1;
   }
-  function go(i) { step = Math.max(0, Math.min(STEPS.length - 1, i)); render(); }
+  function go(i) { step = Math.max(0, Math.min(STEPS.length - 1, i)); render(); if (autoCam && mode === 'build') focus(exploded ? HOME : FOCUS[STEPS[step].k]); }
   function stopPlay() { if (playing) clearInterval(playing); playing = null; bPlay.textContent = 'Assemble'; }
   bPlay.onclick = () => {
     if (playing) return stopPlay();
     if (step >= STEPS.length - 1) go(0);
     bPlay.textContent = 'Pause';
-    playing = setInterval(() => { if (step >= STEPS.length - 1) return stopPlay(); go(step + 1); }, 1700);
+    playing = setInterval(() => { if (step >= STEPS.length - 1) return stopPlay(); go(step + 1); }, 2200);
   };
   bPrev.onclick = () => { stopPlay(); go(step - 1); };
   bNext.onclick = () => { stopPlay(); go(step + 1); };
@@ -370,14 +397,14 @@ function mount(host) {
     bBuild.setAttribute('aria-pressed', m === 'build'); bDemo.setAttribute('aria-pressed', m === 'demo');
     buildBox.style.display = m === 'build' ? '' : 'none'; demoBox.style.display = m === 'demo' ? '' : 'none';
     resetDemo();
-    stage.classList.toggle('nolabels', m === 'demo' || !labChk.checked);
+    stage.classList.toggle('nolabels', m === 'demo' || !labChk.checked); bbShown = m === 'build' && labChk.checked;
     if (m === 'build') { stage.classList.remove('dark'); world.classList.remove('lights'); render(); }
     else { render(); lights(false); capText.textContent = 'Pick a scenario on the right.'; }
   }
   bBuild.onclick = () => setMode('build'); bDemo.onclick = () => setMode('demo');
 
   function resetDemo() {
-    token++;
+    token++; if (mode === 'demo') focus(HOME);
     stage.classList.remove('alarmon'); world.classList.remove('gas');
     [cars.c, cars.d].forEach(c => c.el.style.display = 'none'); person.style.display = 'none';
     if (mode === 'demo' || step >= STEPS.length - 1) { place(cars.a, { x: BAYS[0], z: BAY_Z, h: 0 }); place(cars.b, { x: BAYS[2], z: BAY_Z, h: 0 }); }
@@ -399,9 +426,11 @@ function mount(host) {
     refs.usBeam.classList.add('on'); say('HC-SR04 reads 6 cm — car detected.');
     await sleep(500, t);
     lcd('Welcome! Free:1', 'A=Walk-in PIN+#'); say('LCD asks: A for walk-in, or PIN then #.');
+    if (autoCam) focus(FOCUS.console);
     await sleep(900, t);
   }
   async function driveIn(c, bay, t) {
+    if (autoCam) focus(HOME);
     arm('entry', true); lights(true); say('Entry servo turns to 90° — barrier up. Motion turns the light on.');
     await sleep(700, t);
     await move(c, { z: 110 }, 1500, t); refs.usBeam.classList.remove('on');
@@ -447,14 +476,17 @@ function mount(host) {
         await move(c, { x: EXIT_X }, (EXIT_X - BAYS[0]) * 5, t);
         await move(c, { h: 180 }, 700, t);
         await move(c, { z: 160 }, 700, t);
+        if (autoCam) focus(FOCUS.exitir);
         refs.exitBeam.classList.add('on'); say('Exit IR blocked → exit servo opens. No PIN needed to leave.');
         arm('exit', true); lcd('PARKORA', 'Free 2 of 4'); await sleep(800, t);
+        if (autoCam) focus(HOME);
         await move(c, { z: 390 }, 1600, t); refs.exitBeam.classList.remove('on');
         c.el.style.display = 'none'; say('Exit clear for 2 s → barrier down, exit event logged.');
         await sleep(600, t); arm('exit', false);
       } else if (id === 'gas') {
-        say('Smoke reaches the MQ-2 on the left wall.'); world.classList.add('gas');
+        say('Smoke reaches the MQ-2 on the left wall.'); world.classList.add('gas'); applyCam(); if (autoCam) focus(FOCUS.mq2);
         await sleep(1800, t);
+        if (autoCam) focus(HOME);
         state.gas = 'ALARM'; stage.classList.add('alarmon'); refs.buz.classList.add('on'); lights(true);
         lcd('!! GAS ALERT !!', 'EVACUATE NOW'); arm('exit', true);
         say('3 readings above threshold → siren, lights on, exit gate opens, entry locked, Telegram alert + dashboard banner.');
@@ -475,11 +507,11 @@ function mount(host) {
     } catch (e) { if (e !== 'cancel') throw e; }
   }
 
-  setMode('build'); go(0);
+  paint(); setMode('build'); go(0);
   // auto-play the assembly once on open
   setTimeout(() => { if (mode === 'build' && step === 0 && !playing) bPlay.onclick(); }, 600);
 
-  return () => { token++; stopPlay(); ro.disconnect(); host.innerHTML = ''; };
+  return () => { token++; stopPlay(); ro.disconnect(); if (raf) cancelAnimationFrame(raf); host.innerHTML = ''; };
 }
 window.Parkora3D = { mount };
 })();
