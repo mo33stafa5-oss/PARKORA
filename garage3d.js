@@ -123,7 +123,7 @@ const STEPS = [
   { k: 'gates', t: 'Barrier gates', d: 'Two posts, an SG90 servo on each, striped arms. Entry servo GPIO13, exit servo GPIO14, 5 V from the supply.' },
   { k: 'us', t: 'HC-SR04 at the entry', d: 'Faces the approach lane and detects the car waiting at the barrier. TRIG GPIO23, ECHO GPIO35 through the 1k/2k divider.' },
   { k: 'slotir', t: 'Slot sensors + LEDs', d: 'One IR sensor per bay on the back wall (GPIO36, 39, 32, 33). Each red LED is wired to its sensor output, so it lights by itself when the bay is taken.' },
-  { k: 'exitir', t: 'Exit IR sensor', d: 'On the right wall at the exit lane, GPIO27. A car in front of it opens the exit gate.' },
+  { k: 'exitir', t: 'HC-SR04 at the exit', d: 'Second ultrasonic on the right wall, facing the exit lane. TRIG GPIO12, ECHO GPIO27 through a 1k/2k divider. A car closer than 8 cm opens the exit gate.' },
   { k: 'console', t: 'Driver console', d: 'LCD 16×2 on I2C (SDA 21, SCL 22) above the 4×4 keypad, at driver height next to the entry barrier.' },
   { k: 'pir', t: 'PIR + garage light', d: 'PIR on the back wall (GPIO26) switches the light (GPIO15) on with motion, off after 30 s.' },
   { k: 'mq2', t: 'MQ-2 + buzzer', d: 'Gas sensor on the left wall (GPIO34 via divider), buzzer by the electronics (GPIO25).' },
@@ -136,7 +136,7 @@ const SCEN = [
   { id: 'booked', t: 'Driver with a booking', s: 'PIN 4821 → slot P2' },
   { id: 'walkin', t: 'Walk-in driver', s: 'Presses A → free slot P4' },
   { id: 'wrong', t: 'Wrong PIN ×3', s: 'Keypad locks for 30 s' },
-  { id: 'leave', t: 'Car leaves', s: 'Exit IR opens the exit gate' },
+  { id: 'leave', t: 'Car leaves', s: 'Exit ultrasonic opens the exit gate' },
   { id: 'gas', t: 'Gas / smoke alarm', s: 'Siren, exit opens, entry locked' },
   { id: 'pir', t: 'Motion lighting', s: 'Someone walks in → lights on' }
 ];
@@ -163,7 +163,7 @@ function mount(host) {
     gates: { rx: -24, ry: -18, s: 2.2, cx: -190, cy: 60, cz: 210 },
     us: { rx: -18, ry: -70, s: 2.6, cx: -305, cy: 50, cz: 258 },
     slotir: { rx: -26, ry: 0, s: 1.7, cx: 0, cy: 55, cz: -190 },
-    exitir: { rx: -20, ry: 62, s: 2.6, cx: 300, cy: 35, cz: 170 },
+    exitir: { rx: -18, ry: 70, s: 2.6, cx: 305, cy: 50, cz: 165 },
     console: { rx: -14, ry: 40, s: 3, cx: -160, cy: 95, cz: 268 },
     pir: { rx: -22, ry: 0, s: 2.6, cx: 0, cy: 70, cz: -200 },
     mq2: { rx: -22, ry: -62, s: 2.6, cx: -300, cy: 50, cz: -20 },
@@ -247,7 +247,7 @@ function mount(host) {
   box(p, { x: -322, y: G, z: 258, w: 14, h: 40, d: 14, cls: 'mat' });
   box(p, { x: -310, y: G + 30, z: 258, w: 6, h: 32, d: 74, cls: 'pcb-blue', skip: ['bottom', 'left'], faces: { right: '<i class="eye" style="--e:24px;left:8px;top:4px"></i><i class="eye" style="--e:24px;left:42px;top:4px"></i>' } });
   refs.usBeam = plane(p, { x: -250, y: G + 46, z: 258, w: 112, d: 60, cls: 'beam' });
-  label(p, 'HC-SR04 · TRIG 23 / ECHO 35', -310, 86, 258);
+  label(p, 'HC-SR04 entry · TRIG 23 / ECHO 35', -310, 86, 258);
 
   // slot IR + LEDs
   p = P('slotir');
@@ -257,11 +257,12 @@ function mount(host) {
   });
   label(p, 'IR ×4 · GPIO36/39/32/33', -130, 120, -215);
 
-  // exit IR
+  // exit ultrasonic
   p = P('exitir');
-  box(p, { x: 317, y: G + 16, z: 165, w: 6, h: 22, d: 52, cls: 'pcb-red', skip: ['bottom', 'right'], faces: { left: '<i class="eye" style="--e:14px;left:6px;top:4px"></i><i class="eye" style="--e:14px;left:30px;top:4px"></i>' } });
-  refs.exitBeam = plane(p, { x: 258, y: G + 26, z: 165, w: 110, d: 16, cls: 'irbeam' });
-  label(p, 'Exit IR · GPIO27', 317, 70, 165);
+  box(p, { x: 322, y: G, z: 165, w: 14, h: 40, d: 14, cls: 'mat' });
+  box(p, { x: 310, y: G + 30, z: 165, w: 6, h: 32, d: 74, cls: 'pcb-blue', skip: ['bottom', 'right'], faces: { left: '<i class="eye" style="--e:24px;left:8px;top:4px"></i><i class="eye" style="--e:24px;left:42px;top:4px"></i>' } });
+  refs.exitBeam = plane(p, { x: 252, y: G + 46, z: 165, w: 110, d: 60, cls: 'beam', rz: 180 });
+  label(p, 'HC-SR04 exit · TRIG 12 / ECHO 27', 310, 86, 165);
 
   // console
   p = P('console');
@@ -477,11 +478,11 @@ function mount(host) {
         await move(c, { h: 180 }, 700, t);
         await move(c, { z: 160 }, 700, t);
         if (autoCam) focus(FOCUS.exitir);
-        refs.exitBeam.classList.add('on'); say('Exit IR blocked → exit servo opens. No PIN needed to leave.');
+        refs.exitBeam.classList.add('on'); say('Exit ultrasonic reads 6 cm → exit servo opens. No PIN needed to leave.');
         arm('exit', true); lcd('PARKORA', 'Free 2 of 4'); await sleep(800, t);
         if (autoCam) focus(HOME);
         await move(c, { z: 390 }, 1600, t); refs.exitBeam.classList.remove('on');
-        c.el.style.display = 'none'; say('Exit clear for 2 s → barrier down, exit event logged.');
+        c.el.style.display = 'none'; say('Exit ultrasonic clear for 2 s → barrier down, exit event logged.');
         await sleep(600, t); arm('exit', false);
       } else if (id === 'gas') {
         say('Smoke reaches the MQ-2 on the left wall.'); world.classList.add('gas'); applyCam(); if (autoCam) focus(FOCUS.mq2);
